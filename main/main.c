@@ -1,56 +1,74 @@
 #include <stdio.h>
-
-#include "esp_err.h"
-#include "freertos/FreeRTOS.h"      // Necesario para configurar los delay. Recordemos que estamos en un entorno Freertos
-#include "freertos/task.h"
-#include "driver/uart.h"
-#include "driver/gpio.h"
-#include "string.h"
+#include <freertos/FreeRTOS.h>
+#include <driver/gpio.h>
+#include <driver/uart.h>
+#include <esp_rrm.h>
+#include <string.h>
 
 
-#define UART_BAUDRATE          (115200)
-#define NOT_USED               (0)
-#define BUFFER_TX              (1024)
-#define BUFFER_RX              (1024)
-
-#define QUEUE_SIZE             (10)
-#define QUEUE_USED             (NULL)
-
-#define TEST_MESSAGE        "test message"
+#define GPIO_LED            2
+#define DELAY_MS            1000
+#define BAUD_RATE           115200
+#define UART                UART_NUM_2
+#define BUFFER_LEN          30
+#define MSG                 "[UART2]Counter: %d\n"
 
 
 
-const int uart_num = UART_NUM_2;
 
+// Estructura de configuracion: 
 
 uart_config_t uart_config = {
-    .baud_rate = UART_BAUDRATE,
+    .baud_rate = BAUD_RATE,
     .data_bits = UART_DATA_8_BITS,
     .parity = UART_PARITY_DISABLE,
     .stop_bits = UART_STOP_BITS_1,
-    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
 };
+
+
+
+// Buffer usado para enviar mensajes por UART2
+char buffer_msg[BUFFER_LEN] = {0};
+
+
+// Valor del led
+bool level = true;
+
+
+
 
 
 
 void app_main(void)
 {
+    printf("Inicio el programa \n");
+   
+    // Configuracion de perifericos: gpio
+    // Configuro el gpio  GPIO_LED como salida (output)
+    gpio_set_direction(GPIO_LED,GPIO_MODE_OUTPUT);
 
-    ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-    // Seleccione los pines a utilizar 
-    // TX:17, RX:16 Default
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    //Configuracion del puerto serie:
+    ESP_ERROR_CHECK(uart_param_config(UART,&uart_config));
 
+    //Asignacion de pines TX:18 y RX:19
+    ESP_ERROR_CHECK(uart_set_pin(UART,18,19,UART_PIN_NO_CHANGE,UART_PIN_NO_CHANGE));
 
-    uart_driver_install(uart_num, BUFFER_RX,BUFFER_TX,QUEUE_SIZE , QUEUE_USED, 0);
-    uint32_t counter = 0;
-    char buffer_msg[30];
+    //Instalar driver
+    const int uart_buffer = (1024 * 2);
+    int counter = 0;
+    uart_driver_install(UART,uart_buffer,uart_buffer,10,NULL,0);
+    
+    //Cuando led_status es 0 se apaga el led, caso contrario se enciende.    
+    gpio_set_level(GPIO_LED,level);
 
-    while(1) {
-        sprintf(buffer_msg,"UART2: Counter: %ld \r\n",counter);
-        uart_write_bytes(uart_num,buffer_msg,strlen(buffer_msg));
-        vTaskDelay(1000/portTICK_PERIOD_MS);
-        counter ++;
-    }
-
+    while(1){
+    level = ! level;
+    gpio_set_level(GPIO_LED,level)    ;   
+    // Funcion de darle formato a un string    
+    sprintf(buffer_msg,MSG,counter);
+    uart_write_bytes(UART,buffer_msg,strlen(buffer_msg));
+    vTaskDelay(DELAY_MS/ portTICK_PERIOD_MS);
+    counter++;
+    }   
 }
