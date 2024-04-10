@@ -1,7 +1,7 @@
-# Control de led mediante señal PWM usando hardware (LEDC)
+## _Ejemplo simple: Transmicion por puerto UART_
+Un ejemplo donde se muestra un contador de segundos por puerto UART. Tambien se configura el blink de un led .
 
 
-Este proyecto esta basado en la documentacion del espressif para el manejo del periferico UART[docs page](https://docs.espressif.com/projects/esp-idf/en/v4.2.3/esp32/api-reference/peripherals/uart.html#_CPPv419uart_driver_install11uart_port_tiiiP13QueueHandle_ti)
 
 ### Introduccion 
 Descripción general
